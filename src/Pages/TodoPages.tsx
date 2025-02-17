@@ -1,121 +1,147 @@
-import { useEffect, useState } from 'react';
-import TodoStore, { TodoType } from '../store/store';
-import { useShallow } from 'zustand/react/shallow';
+import React, { useState } from 'react';
+import { Plus, Trash2, Edit2, Check, X } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Select } from '../components/ui/select';
+import TodoStore, { TodoType, Priority } from '../store/store';
 
 const TodoApp = () => {
-  const { todos, addTodo, removeTodo, editTodo, clearTodos } = TodoStore(
-    useShallow((state) => state)
-  );
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
-  const [count, setCount] = useState(0);
+  const [newTodo, setNewTodo] = useState('');
+  const [newCategory, setNewCategory] = useState('');
+  const [newPriority, setNewPriority] = useState<Priority>('medium');
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editText, setEditText] = useState('');
+
+  const { todos, addTodo, removeTodo, editTodo } = TodoStore();
 
   const handleAddTodo = () => {
-    if (title.trim()) {
-      addTodo({ title, description, isDone: false, priority });
-      setTitle('');
-      setDescription('');
+    if (newTodo.trim()) {
+      addTodo({
+        title: newTodo,
+        isDone: false,
+        priority: newPriority as Priority,
+        category: newCategory || 'general',
+      });
+      setNewTodo('');
+      setNewCategory('');
+      setNewPriority('medium');
     }
   };
 
-  // Subscribe to todo count changes
-  useEffect(() => {
-    const unsubscribe = TodoStore.subscribe(
-      (state) => state.todos.length,
-      (currentCount) => {
-        setCount(currentCount);
-      },
-      { fireImmediately: true } // Get initial value immediately
-    );
+  const startEdit = (todo: TodoType) => {
+    setEditingId(todo.id);
+    setEditText(todo.title);
+  };
 
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    console.log('MyComponent re-rendered');
-  });
+  const saveEdit = (id: number) => {
+    if (editText.trim()) {
+      editTodo(id, { title: editText });
+    }
+    setEditingId(null);
+    setEditText('');
+  };
 
   return (
-    <div className="max-w-md mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Todo App</h1>
-
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="border border-gray-300 p-2 w-full mb-2 rounded"
-        />
-        <textarea
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="border border-gray-300 p-2 w-full mb-2 rounded"
-        />
-        <select
-          value={priority}
-          onChange={(e) => setPriority(e.target.value as 'low' | 'medium' | 'high')}
-          className="border border-gray-300 p-2 w-full mb-2 rounded"
-        >
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-        </select>
-        <button onClick={handleAddTodo} className="bg-blue-500 text-white p-2 rounded w-full">
-          Add Todo
-        </button>
-      </div>
-
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Todos:{count} </h2>
-        {todos.length === 0 ? (
-          <p>No todos available.</p>
-        ) : (
-          todos.map((todo: TodoType) => (
-            <div key={todo.id} className="flex justify-between items-center border-b py-2">
-              <div>
-                <h3 className={`font-bold ${todo.isDone ? 'line-through text-gray-500' : ''}`}>
-                  {todo.title}
-                </h3>
-                <p>{todo.description}</p>
-                <span
-                  className={`text-sm ${
-                    todo.priority === 'high'
-                      ? 'text-red-500'
-                      : todo.priority === 'medium'
-                      ? 'text-yellow-500'
-                      : 'text-green-500'
-                  }`}
-                >
-                  Priority: {todo.priority}
-                </span>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => editTodo(todo.id, { isDone: !todo.isDone })}
-                  className={`p-1 rounded ${todo.isDone ? 'bg-green-400' : 'bg-gray-300'}`}
-                >
-                  {todo.isDone ? 'Undo' : 'Complete'}
-                </button>
-                <button
-                  onClick={() => removeTodo(todo.id)}
-                  className="bg-red-500 text-white p-1 rounded"
-                >
-                  Remove
-                </button>
-              </div>
+    <div className="min-h-screen bg-gray-100 p-4">
+      <div className="max-w-4xl mx-auto">
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Todo List</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4 mb-6">
+              <Input
+                value={newTodo}
+                onChange={(e) => setNewTodo(e.target.value)}
+                placeholder="Add new todo..."
+                className="flex-1"
+              />
+              <Input
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                placeholder="Category"
+                className="w-32"
+              />
+              <Select
+                value={newPriority}
+                onValueChange={(value) => setNewPriority(value as Priority)}
+              >
+                <Select.Trigger className="w-32">
+                  <Select.Value placeholder="Priority" />
+                </Select.Trigger>
+                <Select.Content>
+                  <Select.Item value="low">Low</Select.Item>
+                  <Select.Item value="medium">Medium</Select.Item>
+                  <Select.Item value="high">High</Select.Item>
+                </Select.Content>
+              </Select>
+              <Button onClick={handleAddTodo}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add
+              </Button>
             </div>
-          ))
-        )}
-      </div>
 
-      {todos.length > 0 && (
-        <button onClick={clearTodos} className="bg-red-600 text-white p-2 rounded mt-4 w-full">
-          Clear All Todos
-        </button>
-      )}
+            <div className="space-y-2">
+              {todos.map((todo) => (
+                <div
+                  key={todo.id}
+                  className="flex items-center gap-4 p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <input
+                    type="checkbox"
+                    checked={todo.isDone}
+                    onChange={() => editTodo(todo.id, { isDone: !todo.isDone })}
+                    className="w-5 h-5"
+                  />
+
+                  {editingId === todo.id ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <Input
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button onClick={() => saveEdit(todo.id)} variant="ghost" size="sm">
+                        <Check className="w-4 h-4" />
+                      </Button>
+                      <Button onClick={() => setEditingId(null)} variant="ghost" size="sm">
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <span className={`flex-1 ${todo.isDone ? 'line-through text-gray-400' : ''}`}>
+                      {todo.title}
+                    </span>
+                  )}
+
+                  <span
+                    className={`px-2 py-1 rounded text-sm
+                    ${todo.priority === 'high' ? 'bg-red-100 text-red-800' : ''}
+                    ${todo.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : ''}
+                    ${todo.priority === 'low' ? 'bg-green-100 text-green-800' : ''}
+                  `}
+                  >
+                    {todo.priority}
+                  </span>
+
+                  <span className="px-2 py-1 bg-gray-100 rounded text-sm text-gray-600">
+                    {todo.category}
+                  </span>
+
+                  <Button onClick={() => startEdit(todo)} variant="ghost" size="sm">
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+
+                  <Button onClick={() => removeTodo(todo.id)} variant="ghost" size="sm">
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
