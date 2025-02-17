@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import './App.css';
 import MyApp from './components/memo';
+import TodoApp from './Pages/TodoPages';
 
 const DelayedComponent = lazy(
   () =>
@@ -14,7 +15,6 @@ const DelayedComponent = lazy(
 );
 
 function App() {
-  console.log('Todo App with Zustand');
   return (
     <>
       <div className="App bg-gray-100 min-h-screen flex flex-col mb-3">
@@ -27,6 +27,12 @@ function App() {
       </Suspense> */}
 
         <MyApp />
+
+        <TodoApp />
+
+        <footer className="bg-blue-500 text-white p-4 text-center mt-auto">
+          <p className="text-sm">&copy; {new Date().getFullYear()} Todo App with Zustand</p>
+        </footer>
       </div>
     </>
   );
