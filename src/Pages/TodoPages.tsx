@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import TodoStore, { TodoType } from '../store/store';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -9,6 +9,7 @@ const TodoApp = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [count, setCount] = useState(0);
 
   const handleAddTodo = () => {
     if (title.trim()) {
@@ -17,6 +18,23 @@ const TodoApp = () => {
       setDescription('');
     }
   };
+
+  // Subscribe to todo count changes
+  useEffect(() => {
+    const unsubscribe = TodoStore.subscribe(
+      (state) => state.todos.length,
+      (currentCount) => {
+        setCount(currentCount);
+      },
+      { fireImmediately: true } // Get initial value immediately
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    console.log('MyComponent re-rendered');
+  });
 
   return (
     <div className="max-w-md mx-auto p-4">
@@ -51,7 +69,7 @@ const TodoApp = () => {
       </div>
 
       <div>
-        <h2 className="text-xl font-semibold mb-2">Todos: </h2>
+        <h2 className="text-xl font-semibold mb-2">Todos:{count} </h2>
         {todos.length === 0 ? (
           <p>No todos available.</p>
         ) : (
